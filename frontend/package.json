@@ -1,7 +1,6 @@
 {
   "name": "promptai",
   "version": "1.0.0",
-  "main": "index.js",
   "scripts": {
     "build": "parcel build index.html",
     "start": "parcel index.html",
