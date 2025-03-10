@@ -28,7 +28,9 @@ html {
   font-size: 44px;
   border: none;
   z-index: 5;
+  position: relative;
   cursor: pointer;
+  top: 30px;
 }
 
 .main-content {
@@ -237,7 +239,9 @@ html {
     padding: 8px 12px;
     font-size: 44px;
     border: none;
-    z-index: 5;
+    position: absolute;
+    /* top: 10px; */
+    z-index: 1;
     background-color: rgb(242, 242, 242);
     border-radius: 50%;
     cursor: pointer;
