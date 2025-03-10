@@ -1,0 +1,245 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html {
+  overflow: hidden;
+}
+
+.container {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar.open {
+  width: 300px;
+  transition: transform 0.3s ease-in-out, width 0.2s ease-in-out;
+}
+
+.sidebar.closed {
+  width: 0;
+  padding: 0;
+  transition: transform 0.4s ease-in-out, width 0.4s ease-in-out;
+}
+
+.open-btn {
+  padding: 8px 12px;
+  font-size: 44px;
+  border: none;
+  z-index: 5;
+  cursor: pointer;
+}
+
+.main-content {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+  background-color: #f9f9f9;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.model-switch {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.chatgpt-btn,
+.gemini-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.active {
+  background-color: #2a2a2a;
+  color: white;
+}
+.inactive {
+  background-color: #d5d5d5;
+  color: rgb(105, 105, 105);
+}
+
+.message-container {
+  display: flex;
+  flex: 1;
+  gap: 20px;
+  flex-direction: column;
+  padding-left: 5%;
+  padding-right: 5%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.message {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  word-wrap: break-word;
+  border-radius: 10px;
+}
+
+.message.bot {
+  align-self: flex-start;
+  background-color: #ececec;
+  color: rgb(45, 45, 45);
+  word-wrap: break-word !important;
+  overflow-wrap: wrap !important;
+  white-space: pre-wrap !important;
+  max-width: 90%;
+}
+
+.message.user {
+  align-self: flex-end;
+  background-color: hsl(240deg 5.88% 10%);
+  color: white;
+  max-width: 350px;
+  word-wrap: break-word;
+}
+
+.input-container {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.input {
+  width: 100%;
+  padding: 8px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  min-height: 46px;
+  max-height: 150px;
+  border-radius: 8px;
+  outline: none;
+  resize: none;
+  font-family: "Times New Roman", Times, serif;
+  color: #404040;
+}
+.input:focus {
+  border-color: #505050;
+  background-color: #fff;
+}
+
+.send-btn {
+  padding: 8px 12px;
+  background-color: #363636;
+  color: rgb(206, 206, 206);
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.sidebar {
+  background-color: #2d2d2d;
+  color: rgb(234, 234, 234);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px;
+  transition: width 0.3s ease-in-out;
+  overflow-y: auto;
+  transition: transform 0.4s ease-in-out, width 0.4s ease-in-out;
+}
+.chat-title {
+  align-items: center;
+  padding: 6px;
+  border-radius: 10px;
+}
+.chat-title:hover {
+  background-color: rgb(60, 60, 60);
+}
+.chat-title.active {
+  background-color: rgb(80, 80, 80);
+}
+.new-chat {
+  background-color: #f0f0f0;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  padding: 10px;
+}
+.new-chat-btn {
+  background-color: transparent;
+  border: none;
+  font-size: 17px;
+  transition: background 0.3s ease-in-out;
+}
+.new-chat,
+.new-chat-btn,
+.icon:hover {
+  cursor: pointer;
+}
+.icon {
+  font-size: 17px;
+  margin-top: 5px;
+  background-color: black;
+  border-radius: 100%;
+}
+.new-chat {
+  display: flex;
+  gap: 8px;
+  width: 200px;
+  align-items: center;
+  justify-content: center;
+}
+
+.message-loader {
+  width: 60px;
+  aspect-ratio: 5;
+  background: radial-gradient(circle closest-side, #4d4d4d 90%, #49494900) 0 /
+    calc(100% / 3) 100% space;
+  clip-path: inset(0 100% 0 0);
+  animation: l1 1s steps(4) infinite;
+}
+@keyframes l1 {
+  to {
+    clip-path: inset(0 -34% 0 0);
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    transform: translateX(-100%);
+    background: rgba(0, 0, 0, 0.86);
+    transition: transform 0.4s ease-in-out, width 0.4s ease-in-out;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .new-chat {
+    display: flex;
+    gap: 8px;
+    width: 200px;
+    align-items: center;
+    position: relative;
+    top: 6px;
+    left: 60px;
+    justify-content: center;
+  }
+
+  .open-btn {
+    padding: 8px 12px;
+    font-size: 44px;
+    border: none;
+    z-index: 5;
+    background-color: rgb(242, 242, 242);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+}
