@@ -16,6 +16,7 @@ function App() {
   const [chatHistory, setChatHistory] = useState([]);
   const [selectedBot, setSelectedBot] = useState("ChatGPT");
   const [showMessageLoader, setShowMessageLoader] = useState(false);
+  const [showChatHistoryLoader, setShowChatHistoryLoader] = useState(false);
 
   const inputRef = useRef(null);
 
@@ -28,9 +29,12 @@ function App() {
   }, []);
 
   const getChatHistory = async () => {
+    setShowChatHistoryLoader(true);
     try {
       const chats = await axios.get(process.env.BACKEND_URL);
       // console.log(chats.data);
+      setShowChatHistoryLoader(false);
+
       setChatHistory(chats.data);
     } catch (e) {}
   };
@@ -146,6 +150,7 @@ function App() {
                 <IoIosAddCircle className="icon" />
               </div>
             </div>
+
             {chatHistory.map((chat) => {
               return (
                 <div

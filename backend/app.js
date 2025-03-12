@@ -17,6 +17,52 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Weather api
+async function getWeather(latitude, longitude) {
+  const response = await fetch(
+    `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m`
+  );
+  const data = await response.json();
+  console.log("weather" + data);
+
+  return data.current.temperature_2m;
+}
+
+const tools = [
+  {
+    type: "function",
+    function: {
+      name: "getWeather",
+      description:
+        "Get current temperature for provided coordinates in celsius.",
+      parameters: {
+        type: "object",
+        properties: {
+          latitude: { type: "number" },
+          longitude: { type: "number" },
+        },
+        required: ["latitude", "longitude"],
+        additionalProperties: false,
+      },
+      strict: true,
+    },
+  },
+];
+
+const weatherDeclaration = {
+  name: "getWeather",
+  description:
+    "Get current temperature for provided coordinates in Celsius.Figure out latitude and longitude based on city name if they are not provided",
+  parameters: {
+    type: "object",
+    properties: {
+      latitude: { type: "number", description: "Latitude of the location" },
+      longitude: { type: "number", description: "Longitude of the location" },
+    },
+    required: ["latitude", "longitude"],
+  },
+};
+
 const generateChatTitle = async (userMessage, botResponse) => {
   try {
     const openai = new OpenAI({ apiKey: process.env.OPEN_API_KEY });
@@ -36,13 +82,45 @@ const generateChatTitle = async (userMessage, botResponse) => {
       ],
       max_tokens: 7,
     });
-    console.log(titleCompletion.choices[0].message.content.trim());
+    // console.log(titleCompletion.choices[0].message.content.trim());
 
     return titleCompletion.choices[0].message.content.trim();
   } catch (error) {
     console.error("Error generating chat title:", error.message);
     return "New Chat";
   }
+};
+
+const weatherDataFunctionCall = async (completion, formattedMessages) => {
+  console.log("call for weather");
+
+  const toolCall = completion.choices[0].message.tool_calls[0];
+  const args = JSON.parse(toolCall.function.arguments);
+
+  const openai = new OpenAI({ apiKey: process.env.OPEN_API_KEY });
+
+  const result = await getWeather(args.latitude, args.longitude);
+
+  formattedMessages.push(completion.choices[0].message);
+  formattedMessages.push({
+    // append result message
+    role: "tool",
+    tool_call_id: toolCall.id,
+    content: result.toString(),
+  });
+
+  const completion2 = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      { role: "developer", content: "You are a helpful assistant." },
+      ...formattedMessages,
+    ],
+    tools,
+    store: true,
+  });
+  const result2 = completion2.choices[0].message.content;
+
+  return { success: true, data: result2 };
 };
 
 const callChatGPT = async (messages, selectedBot) => {
@@ -66,8 +144,13 @@ const callChatGPT = async (messages, selectedBot) => {
         { role: "developer", content: "You are a helpful assistant." },
         ...formattedMessages,
       ],
+      tools,
       store: true,
     });
+    // console.log(completion.choices[0].message.tool_calls);
+    if (completion.choices[0].message.content === null) {
+      return weatherDataFunctionCall(completion, formattedMessages);
+    }
     const result = completion.choices[0].message.content;
 
     return { success: true, data: result };
@@ -80,26 +163,63 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const callGemini = async (messages) => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const chatHistory = messages.map((msg) => ({
       role: msg.sender === "user" ? "user" : "model",
       parts: [{ text: msg.text || "" }],
     }));
-
-    // console.log(chatHistory);
-
-    const result = await model.generateContent({
-      contents: chatHistory,
+    chatHistory.shift();
+    const chat = model.startChat({
+      tools: [{ function_declarations: [weatherDeclaration] }],
+      history: chatHistory,
     });
-    // console.log(result);
+    const userMessage = messages[messages.length - 1].text;
+    const result = await chat.sendMessage(userMessage);
+
+    const func = result.response.functionCalls();
+    console.log(func);
+    let call;
+    if (func) call = func[0];
+    console.log(call);
+
+    if (call) {
+      console.log("heyyya");
+
+      let apiResponse;
+      console.log("Function Name: ", call.args);
+      if (call.name == "getWeather") {
+        apiResponse = await getWeather(call.args.latitude, call.args.longitude);
+        apiResponse = {
+          temperature: apiResponse,
+        };
+        // console.log(apiResponse);
+      }
+
+      console.log(apiResponse);
+      const result2 = await chat.sendMessage([
+        {
+          functionResponse: {
+            name: "getWeather",
+            response: apiResponse,
+          },
+        },
+      ]);
+      console.log(result2);
+
+      return {
+        success: true,
+        data: result2.response?.candidates?.[0]?.content?.parts?.[0]?.text,
+      };
+    }
 
     const responseText =
       result.response?.candidates?.[0]?.content?.parts?.[0]?.text;
+    // console.log(result.response.candidates[0].content.parts[0].text);
 
     return { success: true, data: responseText };
   } catch (error) {
-    // console.log("Gemini API Error:", error.message);
+    console.log("Gemini API Error:", error.message);
     return { success: false, error: error.message };
   }
 };
@@ -136,7 +256,7 @@ app.get("/chat/:id", async (req, res) => {
 app.put("/chat/:id", async (req, res) => {
   const chatId = req.params.id;
   const { selectedBot, message } = req.body.chat;
-  console.log(selectedBot);
+  //   console.log(selectedBot);
 
   const chat = await Chat.findOne({ id: chatId });
   //   console.log(chat);

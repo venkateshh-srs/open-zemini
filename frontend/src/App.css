@@ -195,7 +195,20 @@ html {
   align-items: center;
   justify-content: center;
 }
-
+/* HTML: <div class="loader"></div> */
+.history-loader {
+  width: 20px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #000;
+  box-shadow: 0 0 0 0 #0004;
+  animation: l2 1s infinite;
+}
+@keyframes l2 {
+  100% {
+    box-shadow: 0 0 0 30px #0000;
+  }
+}
 .message-loader {
   width: 60px;
   aspect-ratio: 5;
@@ -239,8 +252,8 @@ html {
     padding: 8px 12px;
     font-size: 44px;
     border: none;
-    position: absolute;
-    /* top: 10px; */
+    position: relative;
+    top: 10px;
     z-index: 1;
     background-color: rgb(242, 242, 242);
     border-radius: 50%;
