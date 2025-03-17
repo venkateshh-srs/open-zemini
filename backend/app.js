@@ -2,6 +2,9 @@ import express from "express";
 import cors from "cors";
 import OpenAI from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { z } from "zod";
+import { zodResponseFormat } from "openai/helpers/zod";
+
 import mongoose from "mongoose";
 import Chat from "./models/ChatModel.js";
 import dotenv from "dotenv";
@@ -297,7 +300,70 @@ app.put("/chat/:id", async (req, res) => {
   }
 });
 
+//gantt chart
+const openai = new OpenAI({
+  apiKey: process.env.OPEN_API_KEY,
+});
+const GanttTaskSchema = z.object({
+  isValid: z.boolean(),
+  message: z.string(),
+  tasks: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      start: z.string(),
+      end: z.string(),
+      dependencies: z.string().optional(),
+      progress: z.number(),
+    })
+  ),
+});
+
+async function generateGanttJson(prompt) {
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-2024-08-06",
+      messages: [
+        {
+          role: "system",
+          content:
+            "Generate a Gantt chart JSON strictly following the given schema. If the user input is vague, gibberish, or unrelated to a project timeline, set `isValid: false`, provide an appropriate error message in `message`, and leave `tasks` as an empty array. Otherwise, set `isValid: true` and generate a valid Gantt chart.  If you cant deduce depenceies for a task leave it empty. Generate a example gantt chart with some random tasks,timelines and dependencies if user asked to genrate a example gantt chart.",
+        },
+        { role: "user", content: `Create a Gantt chart for: ${prompt}` },
+      ],
+      response_format: zodResponseFormat(GanttTaskSchema, "gantt_chart"),
+    });
+    const ganttChart = completion.choices[0].message.content;
+    const ganttData = JSON.parse(ganttChart);
+    // console.log(ganttChart);
+    console.log(ganttData);
+
+    // console.log(typeof ganttChart);
+    // const parsedData = JSON.parse(ganttChart);
+    // console.log(typeof parsedData);
+    // console.log(parsedData);
+
+    return ganttData;
+  } catch (error) {
+    // console.log(completion.choices[0].message.content);
+    console.error("Error generating Gantt chart JSON:", error);
+
+    return { error: "Failed to generate JSON. Please provide more details." };
+  }
+}
+
+app.post("/generate-gantt", async (req, res) => {
+  const userInput = req.body.input;
+  console.log(userInput);
+  const ganttJson = await generateGanttJson(userInput);
+
+  res.json(ganttJson);
+
+  // res.status(200).json({ message: "Hello got it" });
+});
+
 app.listen(port, () => {
   //   res.status(200).json({ message: "Welcome" });
+
   console.log(`listening on port ${port}`);
 });
