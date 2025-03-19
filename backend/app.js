@@ -299,8 +299,6 @@ app.put("/chat/:id", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-
-//gantt chart
 const openai = new OpenAI({
   apiKey: process.env.OPEN_API_KEY,
 });
@@ -309,12 +307,26 @@ const GanttTaskSchema = z.object({
   message: z.string(),
   tasks: z.array(
     z.object({
-      id: z.string(),
-      name: z.string(),
-      start: z.string(),
-      end: z.string(),
-      dependencies: z.string().optional(),
+      id: z.number(),
+      text: z.string(),
+      start_date: z.string(),
+      duration: z.number(),
       progress: z.number(),
+      user_ids: z.array(z.number()),
+    })
+  ),
+  users: z.array(
+    z.object({
+      key: z.number(),
+      label: z.string(),
+    })
+  ),
+  links: z.array(
+    z.object({
+      id: z.number(),
+      source: z.number(),
+      target: z.number(),
+      type: z.enum(["0", "1", "2", "3"]),
     })
   ),
 });
@@ -327,25 +339,19 @@ async function generateGanttJson(prompt) {
         {
           role: "system",
           content:
-            "Generate a Gantt chart JSON strictly following the given schema. If the user input is vague, gibberish, or unrelated to a project timeline, set `isValid: false`, provide an appropriate error message in `message`, and leave `tasks` as an empty array. Otherwise, set `isValid: true` and generate a valid Gantt chart.  If you cant deduce depenceies for a task leave it empty. Generate a example gantt chart with some random tasks,timelines and dependencies if user asked to genrate a example gantt chart.",
+            "Generate a Gantt chart JSON strictly following the given schema.Using dhtmlx library. If the user input is vague, gibberish, or unrelated to a project timeline, set `isValid: false`, provide an appropriate error message in `message`, and leave `tasks`,`users` and `links` as an empty array. Otherwise, set `isValid: true` and generate a valid Gantt chart with given details or Generate an example gantt chart if user asks for it",
         },
         { role: "user", content: `Create a Gantt chart for: ${prompt}` },
       ],
       response_format: zodResponseFormat(GanttTaskSchema, "gantt_chart"),
     });
+
     const ganttChart = completion.choices[0].message.content;
     const ganttData = JSON.parse(ganttChart);
-    // console.log(ganttChart);
     console.log(ganttData);
-
-    // console.log(typeof ganttChart);
-    // const parsedData = JSON.parse(ganttChart);
-    // console.log(typeof parsedData);
-    // console.log(parsedData);
 
     return ganttData;
   } catch (error) {
-    // console.log(completion.choices[0].message.content);
     console.error("Error generating Gantt chart JSON:", error);
 
     return { error: "Failed to generate JSON. Please provide more details." };
